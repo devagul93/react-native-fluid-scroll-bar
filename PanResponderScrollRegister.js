@@ -91,26 +91,17 @@ export default class PanResponderScrollRegister extends Component {
 
   _onHandlerStateChange = ({ nativeEvent }) => {
     console.log(nativeEvent);
-    const { oldState, state, absoluteY, translationX } = nativeEvent;
-    if (state == State.ACTIVE) {
-      console.log(this.getIndex(absoluteY));
+    const { oldState, state, absoluteY, translationX, velocityX } = nativeEvent;
+    if (state == (State.ACTIVE || State.BEGAN)) {
       let index = this.getIndex(absoluteY);
       this.setState({ currentIndex: index, state });
-      let previousIndexY = absoluteY - 20;
-      // let previousIndexX = this.fractional(previousIndexY);
-      let currentIndexX = this.fractional(0);
-      console.log(currentIndexX);
-      let value = (28 - index) / 28;
-      console.log(`fraction ${value}`);
-      console.log(this.fractional(value));
-    } else if (state == State.END) {
-      this.setState({ state });
+    } else if (state == State.END && oldState === State.ACTIVE) {
       const config = {
         duration: 150,
         toValue: 0,
         easing: Easing.inOut(Easing.ease)
       };
-      // Animated.timing(this._scrollX, config).start();
+      Animated.timing(this._transX, config).start();
     }
   };
 
@@ -245,7 +236,7 @@ export default class PanResponderScrollRegister extends Component {
         extrapolate: Extrapolate.CLAMP
       });
     } else {
-      return set(this._transX, 0);
+      return undefined;
     }
 
     //experimented results
@@ -314,6 +305,8 @@ export default class PanResponderScrollRegister extends Component {
               {
                 // first thing should return truthful for the values to be animated, second shuld be animated exact values for that index.
                 translateX: this._getGranslateXBasedOnIndex1(index)
+                  ? this._getGranslateXBasedOnIndex1(index)
+                  : this._transX
               }
             ]
           }
