@@ -238,12 +238,16 @@ export default class PanResponderScrollRegister extends Component {
     let valX = this.fractional(fractionalY);
     //this should returned in a block
     let outputx = sub(this._transX, multiply(valX, 60)); // this is basically dynamic offsetX based on index.
+    if (this.state.state === State.ACTIVE) {
+      return interpolate(this._transX, {
+        inputRange: [-15, 0],
+        outputRange: [outputx, 0],
+        extrapolate: Extrapolate.CLAMP
+      });
+    } else {
+      return set(this._transX, 0);
+    }
 
-    return interpolate(this._transX, {
-      inputRange: [-10, 0],
-      outputRange: [outputx, 0],
-      extrapolate: Extrapolate.CLAMP
-    });
     //experimented results
     //3
     // fractionalY = 3 / 7;
