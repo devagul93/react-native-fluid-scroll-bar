@@ -23,6 +23,7 @@ const {
   clockRunning,
   greaterOrEq,
   lessOrEq,
+  floor,
   sqrt,
   startClock,
   stopClock,
@@ -40,23 +41,61 @@ function sq(x) {
 export default class PanResponderScrollRegister extends Component {
   constructor(props) {
     super(props);
-    this.listY = 0;
-    this._scrollX = new Value(0);
+    this._listY = new Value(0);
     this._transX = new Value(0);
+    this._transY = new Value(0);
+    this._absoluteX = new Value(0);
+    this._absoluteY = new Value(0);
+    this._scrollX = new Value(0);
     this._offsetX = new Value(60);
+    this._currentIndex = new Value(0);
     // const gesture = { x: new Value(0), y: new Value(0) };
     const state = new Value(-1);
     // const listRef = undefined;
 
-    this._onGestureEvent = event(
+    // this._onGestureEvent = event(
+    //   [
+    //     {
+    //       nativeEvent: {
+    //         translationX: this._transX,
+    //         translationY: this._transY,
+    //         absoluteY: this._absoluteY,
+    //         // translationX: x => set(this._scrollX, sub(x, this._offsetX)),
+    //         // translationY: gesture.y,
+    //         state: state
+    //       }
+    //     }
+    //   ],
+    //   { useNativeDriver: true }
+    // );
+
+    this._onGestureEvent2 = event(
       [
         {
-          nativeEvent: {
-            translationX: this._transX,
-            // translationX: x => set(this._scrollX, sub(x, this._offsetX)),
-            // translationY: gesture.y,
-            state: state
-          }
+          nativeEvent: ({
+            translationX,
+            translationY,
+            state,
+            x,
+            y,
+            absoluteX,
+            absoluteY
+          }) =>
+            block([
+              set(
+                this._currentIndex,
+                floor(
+                  sub(
+                    divide(sub(absoluteY, this._listY), new Value(20)),
+                    new Value(1)
+                  )
+                )
+              ),
+              set(this._transY, translationY),
+              set(this._transX, translationX),
+              set(this._absoluteY, absoluteY),
+              set(this._absoluteX, absoluteX)
+            ])
         }
       ],
       { useNativeDriver: true }
@@ -75,19 +114,19 @@ export default class PanResponderScrollRegister extends Component {
     return Math.floor(index - 1);
   };
 
-  _measureRef = ref => {
-    ref.Component.measure((width, height, px, py, fx, fy) => {
-      const location = {
-        fx: fx,
-        fy: fy,
-        px: px,
-        py: py,
-        width: width,
-        height: height
-      };
-      console.log(location);
-    });
-  };
+  // _measureRef = ref => {
+  //   ref.Component.measure((width, height, px, py, fx, fy) => {
+  //     const location = {
+  //       fx: fx,
+  //       fy: fy,
+  //       px: px,
+  //       py: py,
+  //       width: width,
+  //       height: height
+  //     };
+  //     console.log(location);
+  //   });
+  // };
 
   _onHandlerStateChange = ({ nativeEvent }) => {
     console.log(nativeEvent);
@@ -122,14 +161,14 @@ export default class PanResponderScrollRegister extends Component {
         <View style={styles.left}></View>
         {/* Right/ panResponder/register/llistten for touches */}
         <PanGestureHandler
-          onGestureEvent={this._onGestureEvent}
-          onHandlerStateChange={this._onHandlerStateChange}
+          onGestureEvent={this._onGestureEvent2}
+          onHandlerStateChange={this._logger2}
         >
           <Animated.View ref={listRef} style={styles.right}>
             <Animated.View
               onLayout={({ nativeEvent }) => {
                 console.log(nativeEvent);
-                this.listY = nativeEvent.layout.y;
+                set(this._listY, new Value(nativeEvent.layout.y));
               }}
               collapsable={false}
               style={{ padding: 0 }}
@@ -148,57 +187,6 @@ export default class PanResponderScrollRegister extends Component {
     console.log(`nativeEvent: ${nativeEvent}`);
     // console.log(`value ${value}`);
     // console.log(`index${index}`);
-  };
-
-  _logger = ({ nativeEvent }) => {
-    const { translationX } = nativeEvent;
-    // console.log(nativeEvent);
-    // console.log(`nativeEvent: ${nativeEvent}`);
-    console.log(
-      "************************new movement, translationX updatd **************************"
-    );
-    console.log(`translateX: ${translationX}`);
-    let scrollx = translationX - 60; // translated value at x0
-    // calculate x for modx =1,2,3,4,5
-    let fractionalY = 1 / 7;
-    let valX = this.fractional(fractionalY);
-    let outputx = translationX - valX * 60;
-    console.log(`scrollX: ${scrollx}`);
-    // console.log(`fractionalY1: ${fractionalY}`);
-    // console.log(`valX1: ${valX}`);
-    console.log(`outputx1: ${outputx}`);
-
-    //2
-    fractionalY = 2 / 7; // making the y factor more spread out for the proper effect to take place
-    valX = this.fractional(fractionalY);
-    outputx = translationX - valX * 60;
-    // console.log(`fractionalY2: ${fractionalY}`);
-    // console.log(`valX2: ${valX}`);
-    console.log(`outputx2: ${outputx}`);
-
-    //3
-    fractionalY = 3 / 7;
-    valX = this.fractional(fractionalY);
-    outputx = translationX - valX * 60;
-    // console.log(`fractionalY3: ${fractionalY}`);
-    // console.log(`valX3: ${valX}`);
-    console.log(`outputx3: ${outputx}`);
-
-    //4
-    fractionalY = 4 / 7;
-    valX = this.fractional(fractionalY);
-    outputx = translationX - valX * 60;
-    //  console.log(`fractionalY3: ${fractionalY}`);
-    //  console.log(`valX3: ${valX}`);
-    console.log(`outputx4: ${outputx}`);
-
-    //5
-    fractionalY = 5 / 7;
-    valX = this.fractional(fractionalY);
-    outputx = translationX - valX * 60;
-    //  console.log(`fractionalY3: ${fractionalY}`);
-    //  console.log(`valX3: ${valX}`);
-    console.log(`outputx4: ${outputx}`);
   };
 
   // assume y to be animated value
@@ -222,6 +210,7 @@ export default class PanResponderScrollRegister extends Component {
     };
     // Animated.timing(this._scrollX, config).start();
   };
+
   _getGranslateXBasedOnIndex1 = index => {
     let absDiff = Math.abs(this.state.currentIndex - index);
     // let fractionalY = absDiff / 28;
@@ -277,6 +266,15 @@ export default class PanResponderScrollRegister extends Component {
     //   return this._transXC;
     // }
   };
+
+  // vertical displacement
+  _getGranslateXBasedOnIndex2 = index => {
+    let indexVal = new Value(index);
+    return block([
+      cond(eq(this._currentIndex, indexVal), add(this._offsetX, this._transX))
+    ]);
+  };
+
   _shouldCharacterAnimate = index => {
     // return this.state.state === State.ACTIVE;
     let absDiff = Math.abs(this.state.currentIndex - index);
@@ -304,9 +302,8 @@ export default class PanResponderScrollRegister extends Component {
             transform: [
               {
                 // first thing should return truthful for the values to be animated, second shuld be animated exact values for that index.
-                translateX: this._getGranslateXBasedOnIndex1(index)
-                  ? this._getGranslateXBasedOnIndex1(index)
-                  : this._transX
+                translateX: this._getGranslateXBasedOnIndex2(index)
+                // translateX: 0
               }
             ]
           }
@@ -318,6 +315,74 @@ export default class PanResponderScrollRegister extends Component {
         index={index}
       ></CharItem>
     );
+  };
+
+  // monitor translationy and see how x changes of that initial position.
+  _logger2 = ({ nativeEvent }) => {
+    const {
+      x,
+      y,
+      translationX,
+      translationY,
+      absoluteX,
+      absoluteY
+    } = nativeEvent;
+    console.log(
+      "************************new movement, translationY updatd **************************"
+    );
+    // console.log(`nativeEvent: ${nativeEvent}`);
+    console.log(nativeEvent);
+  };
+
+  _logger = ({ nativeEvent }) => {
+    const { translationX } = nativeEvent;
+    // console.log(nativeEvent);
+    // console.log(`nativeEvent: ${nativeEvent}`);
+    console.log(
+      "************************new movement, translationX updatd **************************"
+    );
+    console.log(`translateX: ${translationX}`);
+    let scrollx = translationX - 60; // translated value at x0
+    // calculate x for modx =1,2,3,4,5
+    let fractionalY = 1 / 7;
+    let valX = this.fractional(fractionalY);
+    let outputx = translationX - valX * 60;
+    console.log(`scrollX: ${scrollx}`);
+    // console.log(`fractionalY1: ${fractionalY}`);
+    // console.log(`valX1: ${valX}`);
+    console.log(`outputx1: ${outputx}`);
+
+    //2
+    fractionalY = 2 / 7; // making the y factor more spread out for the proper effect to take place
+    valX = this.fractional(fractionalY);
+    outputx = translationX - valX * 60;
+    // console.log(`fractionalY2: ${fractionalY}`);
+    // console.log(`valX2: ${valX}`);
+    console.log(`outputx2: ${outputx}`);
+
+    //3
+    fractionalY = 3 / 7;
+    valX = this.fractional(fractionalY);
+    outputx = translationX - valX * 60;
+    // console.log(`fractionalY3: ${fractionalY}`);
+    // console.log(`valX3: ${valX}`);
+    console.log(`outputx3: ${outputx}`);
+
+    //4
+    fractionalY = 4 / 7;
+    valX = this.fractional(fractionalY);
+    outputx = translationX - valX * 60;
+    //  console.log(`fractionalY3: ${fractionalY}`);
+    //  console.log(`valX3: ${valX}`);
+    console.log(`outputx4: ${outputx}`);
+
+    //5
+    fractionalY = 5 / 7;
+    valX = this.fractional(fractionalY);
+    outputx = translationX - valX * 60;
+    //  console.log(`fractionalY3: ${fractionalY}`);
+    //  console.log(`valX3: ${valX}`);
+    console.log(`outputx4: ${outputx}`);
   };
 }
 const styles = StyleSheet.create({
