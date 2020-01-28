@@ -6,13 +6,15 @@ export default class CharItem extends Component {
   render() {
     return (
       <Animated.View style={this.props.animatedStyle}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={() => {
             this.props.onPress(this.props.text);
           }}
-        >
-          <Text style={[this.props.style]}>{this.props.text}</Text>
-        </TouchableOpacity>
+        > */}
+        <Animated.Text style={[this.props.style]}>
+          {this.props.text}
+        </Animated.Text>
+        {/* </TouchableOpacity> */}
       </Animated.View>
     );
   }

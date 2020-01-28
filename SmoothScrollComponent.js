@@ -11,12 +11,24 @@ import {
 } from "react-native";
 import CharItem from "./CharItem";
 import Animated, { Easing } from "react-native-reanimated";
-const { cond, lessThan, abs, sub, Value, multiply, debug } = Animated;
+import { PanGestureHandler, State } from "react-native-gesture-handler";
+const {
+  cond,
+  lessThan,
+  abs,
+  sub,
+  Value,
+  add,
+  event,
+  multiply,
+  debug,
+  set
+} = Animated;
 const { width, height } = Dimensions;
 
 export default class SmoothScrollComponent extends Component {
   _scrollX = new Value(0);
-  _xVal = new Value(0);
+  // _xVal = new Value(0);
 
   constructor(props) {
     super(props);
@@ -30,11 +42,11 @@ export default class SmoothScrollComponent extends Component {
     console.log("onpress");
     this.setState({ currentIndex: index });
     this._config = {
-      duration: 500,
+      duration: 250,
       toValue: 5,
       easing: Easing.inOut(Easing.ease)
     };
-    Animated.timing(this.state.scrollX, this._config).start();
+    // Animated.timing(this.state.scrollX, this._config).start();
   };
 
   onPressIn() {
@@ -69,7 +81,7 @@ export default class SmoothScrollComponent extends Component {
           {
             transform: [
               {
-                translateX: shouldScroll ? result : 0
+                translateX: this.state.currentIndex === index ? result : 0
               }
             ]
           }
@@ -91,7 +103,6 @@ export default class SmoothScrollComponent extends Component {
   };
 
   render() {
-    // console.log(this.state.scrollX);
     return (
       <View style={styles.container}>
         <Animated.ScrollView
@@ -99,6 +110,7 @@ export default class SmoothScrollComponent extends Component {
             styles.container,
             { flexDirection: "column" }
           ]}
+          onScroll={this.onGestureEvent}
           style={
             [
               // {
@@ -119,6 +131,14 @@ export default class SmoothScrollComponent extends Component {
       </View>
     );
   }
+
+  onGestureEvent = event([
+    {
+      nativeEvent: {
+        translationX: x => set(add(this._xVal, new Value(50)), x)
+      }
+    }
+  ]);
 
   getCharacters() {
     return (
