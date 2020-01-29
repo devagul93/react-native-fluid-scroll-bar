@@ -19,7 +19,9 @@ const {
   multiply,
   pow,
   set,
+  debug,
   abs,
+  floor,
   clockRunning,
   greaterOrEq,
   lessOrEq,
@@ -49,7 +51,7 @@ export default class PanResponderScrollRegister extends Component {
     this._scrollX = new Value(0);
     this._offsetX = new Value(60);
     this._currentIndex = new Value(0);
-    // const gesture = { x: new Value(0), y: new Value(0) };
+    this._state = new Value(-1); // state undetermined
     const state = new Value(-1);
     // const listRef = undefined;
 
@@ -91,6 +93,39 @@ export default class PanResponderScrollRegister extends Component {
                   )
                 )
               ),
+              set(this._transY, translationY),
+              set(this._transX, translationX),
+              set(this._absoluteY, absoluteY),
+              set(this._absoluteX, absoluteX)
+            ])
+        }
+      ],
+      { useNativeDriver: true }
+    );
+
+    this._onGestureEvent2 = event(
+      [
+        {
+          nativeEvent: ({
+            translationX,
+            translationY,
+            state,
+            x,
+            y,
+            absoluteX,
+            absoluteY
+          }) =>
+            block([
+              set(
+                this._currentIndex,
+                floor(
+                  sub(
+                    divide(sub(absoluteY, this._listY), new Value(20)),
+                    new Value(1)
+                  )
+                )
+              ),
+              set(this._state, state),
               set(this._transY, translationY),
               set(this._transX, translationX),
               set(this._absoluteY, absoluteY),
@@ -144,14 +179,6 @@ export default class PanResponderScrollRegister extends Component {
     }
   };
 
-  fractional = y => {
-    let x = 0;
-    let squared = y * y;
-    let dividedExp = -(squared / 2);
-    x = 1.7 * Math.exp(dividedExp);
-    return x;
-  };
-
   render() {
     const listRef = React.createRef();
     return (
@@ -162,7 +189,7 @@ export default class PanResponderScrollRegister extends Component {
         {/* Right/ panResponder/register/llistten for touches */}
         <PanGestureHandler
           onGestureEvent={this._onGestureEvent2}
-          onHandlerStateChange={this._logger2}
+          onHandlerStateChange={this._onHandlerStateChange}
         >
           <Animated.View ref={listRef} style={styles.right}>
             <Animated.View
@@ -191,10 +218,19 @@ export default class PanResponderScrollRegister extends Component {
 
   // assume y to be animated value
   animatedFractional = y => {
-    let x = 0;
+    let x = new Value(0);
     let squared = sq(y);
-    let dividedExp = -divide(squared, new Value(2));
-    return multiply(new Value(2.5), exp(dividedExp));
+    let dividedExp = sub(new Value(0), divide(squared, new Value(2)));
+    return multiply(new Value(1.7), exp(dividedExp));
+    // return x;
+  };
+
+  fractional = y => {
+    let x = 0;
+    let squared = y * y;
+    let dividedExp = -(squared / 2);
+    x = 1.7 * Math.exp(dividedExp);
+    return x;
   };
 
   _getGranslateXBasedOnIndex = index => {
@@ -211,6 +247,72 @@ export default class PanResponderScrollRegister extends Component {
     // Animated.timing(this._scrollX, config).start();
   };
 
+  _getGranslateXBasedOnIndex2 = index => {
+    let absDiff = debug("absDiff", abs(sub(this._currentIndex, index)));
+
+    // let fractionalY = absDiff / 28;
+    let fractionalY = debug("fractionalY", divide(absDiff, new Value(5))); // giving more appropriate values
+    let valX = debug("valX", this.animatedFractional(fractionalY));
+    //this should returned in a block
+    // let outputx = new Value(1);
+    // this._transX;
+    let outputx = debug(
+      "outputx",
+      sub(this._transX, multiply(valX, new Value(60)))
+    ); // this is basically dynamic offsetX based on index.
+    // let outputx = debug("outputx", multiply(valX, new Value(60))); // this is basically dynamic offsetX based on index.
+
+    // return block([
+    //   // set(absDiff, ),
+    //   // set(fractionalY, ),
+    //   // set(valX, ),
+    //   // set(outputx, ),
+    //   cond(
+    //     eq(this._state, State.ACTIVE),
+    //     [
+    //       set(
+    //         fractionalY,
+    //         divide(
+    //           abs(sub(this._currentIndex, new Value(index))),
+    //           new Value(10)
+    //         )
+    //       ),
+    //       set(
+    //         valX,
+    //         multiply(
+    //           new Value(1.7),
+    //           exp(
+    //             sub(
+    //               new Value(0),
+    //               divide(multiply(fractionalY, fractionalY), new Value(2))
+    //             )
+    //           )
+    //         )
+    //       ),
+    //       set(outputx, debug("outX: ", sub(multiply(valX, new Value(60))))),
+    //       interpolate(this._transY, {
+    //         inputRange: [-300, 0, 300],
+    //         outputRange: [outputx, 0, outputx]
+    //         // extrapolate: Extrapolate.CLAMP
+    //       })
+    //     ],
+    //     this._transX
+    //   ),
+    //   this._transX
+    // ]);
+
+    // sub(this._transX, multiply(this.animatedFractional(divide(abs(sub(this._currentIndex, new Value(index))), new Value(6))), new Value(60)))
+    if (eq(this._state, State.ACTIVE)) {
+      return interpolate(this._transY, {
+        inputRange: [-100, 0, 100],
+        outputRange: [outputx, 0, outputx]
+        // extrapolate: Extrapolate.CLAMP
+      });
+    } else {
+      return -20;
+    }
+  };
+
   _getGranslateXBasedOnIndex1 = index => {
     let absDiff = Math.abs(this.state.currentIndex - index);
     // let fractionalY = absDiff / 28;
@@ -225,54 +327,8 @@ export default class PanResponderScrollRegister extends Component {
         extrapolate: Extrapolate.CLAMP
       });
     } else {
-      return undefined;
+      return this._transX;
     }
-
-    //experimented results
-    //3
-    // fractionalY = 3 / 7;
-    // valX = this.fractional(fractionalY);
-    // outputx = this._scrollX - valX * 60;
-    // console.log(`fractionalY3: ${fractionalY}`);
-    // console.log(`valX3: ${valX}`);
-    // console.log(`outputx3: ${outputx}`);
-
-    // return interpolate(this._scrollX, {
-    //   inputRange: [-120, 0],
-    //   outputRange: [outputx, 0]
-    // });
-
-    // this below ssection is working as of now.
-
-    // this._transXA = interpolate(this._scrollX, {
-    //   inputRange: [-120, 120],
-    //   outputRange: [-100, 100]
-    // });
-    // this._transXB = interpolate(this._scrollX, {
-    //   inputRange: [-120, -60, 60, 120],
-    //   outputRange: [-60, -10, 10, 60]
-    // });
-    // this._transXC = interpolate(this._scrollX, {
-    //   inputRange: [-120, -60, 60, 120],
-    //   outputRange: [-30, -5, 5, 30]
-    // });
-    // if (absDiff == 0) {
-    //   return this._scrollX;
-    // } else if (absDiff == 1) {
-    //   return this._transXA;
-    // } else if (absDiff == 2) {
-    //   return this._transXB;
-    // } else if (absDiff == 3) {
-    //   return this._transXC;
-    // }
-  };
-
-  // vertical displacement
-  _getGranslateXBasedOnIndex2 = index => {
-    let indexVal = new Value(index);
-    return block([
-      cond(eq(this._currentIndex, indexVal), add(this._offsetX, this._transX))
-    ]);
   };
 
   _shouldCharacterAnimate = index => {
@@ -303,7 +359,6 @@ export default class PanResponderScrollRegister extends Component {
               {
                 // first thing should return truthful for the values to be animated, second shuld be animated exact values for that index.
                 translateX: this._getGranslateXBasedOnIndex2(index)
-                // translateX: 0
               }
             ]
           }
